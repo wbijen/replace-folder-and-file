@@ -9,31 +9,30 @@ async function replaceInFile(filePath: string, stringToFind: string, stringToRep
   await fs.writeFile(filePath, updatedContent, 'utf8');
 }
 
-async function replaceInFilename(filePath: string, stringToFind: string, stringToReplace: string) {
-  if (filePath.includes(stringToFind)) {
-    const newFilePath = filePath.replace(stringToFind, stringToReplace);
-    await fs.move(filePath, newFilePath);
-    return newFilePath;
+async function replaceInPath(inputPath: string, stringToFind: string, stringToReplace: string): Promise<string> {
+  if (inputPath.includes(stringToFind)) {
+    const newPath = inputPath.replace(stringToFind, stringToReplace);
+    await fs.move(inputPath, newPath);
+    return newPath;
   }
-  return filePath;
+  return inputPath;
 }
 
 async function processPath(dirPath: string, stringToFind: string, stringToReplace: string) {
   const entries = await fs.readdir(dirPath);
 
   for (const entry of entries) {
-    const entryPath = path.join(dirPath, entry);
+    let entryPath = path.join(dirPath, entry);
     const stats = await fs.stat(entryPath);
 
     if (stats.isDirectory()) {
+      entryPath = await replaceInPath(entryPath, stringToFind, stringToReplace);
       await processPath(entryPath, stringToFind, stringToReplace);
     } else if (stats.isFile()) {
       await replaceInFile(entryPath, stringToFind, stringToReplace);
-      await replaceInFilename(entryPath, stringToFind, stringToReplace);
+      await replaceInPath(entryPath, stringToFind, stringToReplace);
     }
   }
-
-  await replaceInFilename(dirPath, stringToFind, stringToReplace);
 }
 
 async function main() {
